@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-paper text-ink antialiased; }
+  h1 { @apply text-2xl font-semibold tracking-tight; }
+  h2 { @apply text-lg font-semibold; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+}
+
+@layer components {
+  .panel { @apply rounded-md border border-line bg-white p-5; }
+  .btn { @apply inline-flex items-center justify-center rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50; }
+  .btn-quiet { @apply inline-flex items-center justify-center rounded-md border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink hover:bg-paper; }
+  .input { @apply w-full rounded-md border border-line bg-white px-2.5 py-1.5 text-sm; }
+  .label { @apply mb-1 block text-xs font-medium text-slate-600; }
+  .tbl { @apply w-full text-left text-sm; }
+  .tbl th { @apply border-b border-line px-3 py-2 text-xs font-medium text-slate-500; }
+  .tbl td { @apply border-b border-line px-3 py-2.5 align-middle; }
+  .badge { @apply inline-block rounded px-1.5 py-0.5 text-xs font-medium; }
+  .b-ok { @apply bg-emerald-50 text-emerald-800; }
+  .b-warn { @apply bg-amber-50 text-amber-800; }
+  .b-bad { @apply bg-red-50 text-red-700; }
+  .b-mute { @apply bg-slate-100 text-slate-600; }
+}
