@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EnrolmentStatus {
+  ENROLLED
+  DEFERRED
+  WITHDRAWN
+  COMPLETED
+}
+
+// Money is always stored as integer minor units (cents) - never floats.
+model Programme {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  name     String
+  fee      Int // standard tuition fee, minor units
+  students Student[]
+  modules  Module[]
+}
+
+model Module {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  title       String
+  programmeId String
+  programme   Programme    @relation(fields: [programmeId], references: [id])
+  assessments Assessment[]
+}
+
+model Student {
+  id           String          @id @default(cuid())
+  studentId    String          @unique // SMS-2025-0001
+  fullName     String
+  email        String          @unique
+  dob          DateTime        @db.Date
+  academicYear Int
+  status       EnrolmentStatus @default(ENROLLED)
+  programmeId  String
+  programme    Programme       @relation(fields: [programmeId], references: [id])
+  // Snapshot of the programme fee at enrolment: later fee changes must not rewrite history.
+  feeAmount    Int
+  feeDueDate   DateTime
+  createdAt    DateTime        @default(now())
+  payments     Payment[]
+  submissions  Submission[]
+  grades       Grade[]
+
+  @@index([programmeId])
+  @@index([status])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount    Int // minor units, always > 0
+  paidAt    DateTime
+  reference String   @unique // bank / receipt reference; unique guards against double entry
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+}
+
+// One row per academic year, used to generate SMS-<year>-<seq> atomically.
+model StudentSequence {
+  year Int @id
+  last Int
+}
+
+model Assessment {
+  id          String       @id @default(cuid())
+  title       String
+  moduleId    String
+  module      Module       @relation(fields: [moduleId], references: [id])
+  deadline    DateTime
+  createdAt   DateTime     @default(now())
+  submissions Submission[]
+  grades      Grade[]
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fileName     String // original name shown to staff
+  filePath     String // relative to UPLOAD_DIR
+  submittedAt  DateTime   @default(now())
+  isLate       Boolean    @default(false)
+
+  @@unique([assessmentId, studentId]) // one submission per student per assessment
+}
+
+model Grade {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score        Int // 0-100
+  published    Boolean    @default(false)
+  publishedAt  DateTime?
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([assessmentId, studentId])
+}
